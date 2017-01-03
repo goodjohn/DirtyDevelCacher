@@ -8,7 +8,8 @@ urls = {
     'example_site': 'http://books.toscrape.com/catalogue/category/books/travel_2/index.html',
     'example_pic': 'http://books.toscrape.com/media/cache/da/a0/daa08c54a927c27494ea5bb90af79c60.jpg',
     'example_404': 'http://books.toscrape.com/this-url-doesnt-exist',
-    'example_403': 'http://books.toscrape.com/media/'
+    'example_403': 'http://books.toscrape.com/media/',
+    'bad_url':  'http://books.to_scrape.com'
 }
 
 for desc, url in urls.items():
@@ -20,5 +21,8 @@ for desc, url in urls.items():
         pprint('Response Code: {}'.format(response.status))
         pprint(dict(response.info()))
     except urllib.error.HTTPError as e:
-        pprint('Failed: {}'.format(e))
+        pprint('Failed: {} {}'.format(e.code, e.msg))
+        # pprint('Failed: {}'.format(e))
+    except urllib.error.URLError as e:
+        print('Bad Url: {}'.format(e.reason))
     print()
