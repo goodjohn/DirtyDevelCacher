@@ -16,13 +16,17 @@ for desc, url in urls.items():
     print()
     print(desc)
     print(url)
+    url_header = {}
     try:
         response = urlopen(url)
-        pprint('Response Code: {}'.format(response.status))
-        pprint(dict(response.info()))
+        url_header = dict(response.info())
+        url_header['net_conn'] = True
+        url_header['status'] = response.status
     except urllib.error.HTTPError as e:
-        pprint('Failed: {} {}'.format(e.code, e.msg))
-        # pprint('Failed: {}'.format(e))
+        url_header['net_conn'] = True
+        url_header['status'] = e.status
     except urllib.error.URLError as e:
-        print('Bad Url: {}'.format(e.reason))
+        url_header['net_conn'] = False
+        url_header['reason'] = e.reason
     print()
+    pprint(url_header)
