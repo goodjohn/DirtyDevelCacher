@@ -25,8 +25,8 @@ elif not os.path.isdir(d):
 for url in urls.values():
     url_header = {}
     url_md5 = md5(str(url).encode('utf-8')).hexdigest()
-    header_cache_filename = d + '/' + url_md5 + '.header'  # TODO: Refractor path management
-    content_cache_filename = d + '/' + url_md5 + '.content'
+    header_cache_filename = os.path.join(d, url_md5+'.header')
+    content_cache_filename = os.path.join(d, url_md5+'.content')
     try:
         response = urlopen(url)
         url_header = dict(response.info())
@@ -47,6 +47,6 @@ for url in urls.values():
         else:
             with open(content_cache_filename, 'wb') as content_cache_file:
                 content_cache_file.write(content)
-            print('Saved to cache.')
+            print('Saved to cache: ', content_cache_filename)
     with open(header_cache_filename, 'w') as header_cache_file:
         json.dump(url_header, header_cache_file)
