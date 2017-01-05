@@ -19,9 +19,15 @@ d = 'cache_files'
 
 if not os.path.exists(d):
     os.makedirs(d)
+elif not os.path.isdir(d):
+    raise FileExistsError('Trouble creating cache directory.')
 
 for url in urls.values():
     url_header = {}
+    # fn = hash(url)  # TODO: Inconsistent output? Investigate.
+    url_md5 = md5(str(url).encode('utf-8')).hexdigest()
+    header_cache_filename = d + '/' + url_md5 + '.header'  # TODO: Refractor path management
+    content_cache_filename = d + '/' + url_md5 + '.content'
     try:
         response = urlopen(url)
         url_header = dict(response.info())
@@ -33,8 +39,13 @@ for url in urls.values():
     except urllib.error.URLError as e:
         url_header['net_conn'] = False
         url_header['reason'] = '{}'.format(e.reason)
-    # fn = hash(url)  # TODO: Inconsistent output? Investigate.
-    url_md5 = md5(str(url).encode('utf-8')).hexdigest()
-    header_cache_filename = d + '/' + url_md5 + '.headers'  # TODO: Refractor path management
+    else:
+        url_header['url'] = response.geturl()  # In case of redirects
+        content = response.read()
+        # Decode from bytes immediately? Or do that after the request/read caching process?
+        # if url_header['Content-Type'] == 'text/html':
+        #     content = content.decode()  # Won't work with 'wb' writes.
+        with open(content_cache_filename, 'wb') as content_cache_file:
+            content_cache_file.write(content)
     with open(header_cache_filename, 'w') as header_cache_file:
         json.dump(url_header, header_cache_file)
