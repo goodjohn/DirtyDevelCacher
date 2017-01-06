@@ -6,6 +6,9 @@ from pprint import pprint
 import json
 import os
 from hashlib import md5
+import time
+
+# TODO: !!! Definitely needs a refactor now.
 
 urls = {
     'example_site': 'http://books.toscrape.com/catalogue/category/books/travel_2/index.html',
@@ -41,8 +44,7 @@ for url in urls.values():
     else:
         url_header['url'] = response.geturl()  # In case of redirects
         content = response.read()
-        # TODO: Set max-age (hardcode for now) to check against before retrieving.
-        if os.path.isfile(content_cache_filename):
+        if os.path.isfile(content_cache_filename) and time.time() - os.path.getmtime(content_cache_filename) < 90:
             decode = False
             if os.path.isfile(header_cache_filename):
                 with open(header_cache_filename, 'r') as header_file:
