@@ -41,9 +41,19 @@ for url in urls.values():
     else:
         url_header['url'] = response.geturl()  # In case of redirects
         content = response.read()
+        # TODO: Set max-age (hardcode for now) to check against before retrieving.
         if os.path.isfile(content_cache_filename):
+            decode = False
+            if os.path.isfile(header_cache_filename):
+                with open(header_cache_filename, 'r') as header_file:
+                    header_info = json.load(header_file)
+                if header_info['Content-Type'] == 'text/html':
+                    decode = True
             with open(content_cache_filename, 'rb') as content_cache_file:
-                print(content_cache_file.read())
+                if decode:
+                    print(content_cache_file.read().decode())
+                else:
+                    print(content_cache_file.read())
         else:
             with open(content_cache_filename, 'wb') as content_cache_file:
                 content_cache_file.write(content)
