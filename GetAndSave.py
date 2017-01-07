@@ -25,7 +25,9 @@ if not os.path.exists(d):
 elif not os.path.isdir(d):
     raise FileExistsError('Trouble creating cache directory.')
 
-for url in urls.values():
+for desc, url in urls.items():
+    print('{:<12} : '.format(desc), end='')
+    content = ''
     url_header = {}
     url_md5 = md5(str(url).encode('utf-8')).hexdigest()
     header_cache_filename = os.path.join(d, url_md5+'.header')
@@ -44,21 +46,27 @@ for url in urls.values():
     else:
         url_header['url'] = response.geturl()  # In case of redirects
         content = response.read()
-        if os.path.isfile(content_cache_filename) and time.time() - os.path.getmtime(content_cache_filename) < 90:
-            decode = False
-            if os.path.isfile(header_cache_filename):
-                with open(header_cache_filename, 'r') as header_file:
-                    header_info = json.load(header_file)
-                if header_info['Content-Type'] == 'text/html':
-                    decode = True
-            with open(content_cache_filename, 'rb') as content_cache_file:
-                if decode:
-                    print(content_cache_file.read().decode())
-                else:
-                    print(content_cache_file.read())
-        else:
-            with open(content_cache_filename, 'wb') as content_cache_file:
-                content_cache_file.write(content)
-            print('Saved to cache: ', content_cache_filename)
     with open(header_cache_filename, 'w') as header_cache_file:
         json.dump(url_header, header_cache_file)
+    if os.path.isfile(header_cache_filename) and time.time() - os.path.getmtime(header_cache_filename) < 180:
+        decode = False
+        with open(header_cache_filename, 'r') as header_file:
+            header_info = json.load(header_file)
+        if 'Content-Type' in header_info and header_info['Content-Type'] == 'text/html':
+            decode = True
+        if not header_info['net_conn']:
+            print('Bad network connection; resource not in cache')
+        elif header_info['status'] == 404 or header_info['status'] == 403:
+            print('HTTP Status {}; resource not in cache.'.format(header_info['status']))
+        elif os.path.isfile(content_cache_filename):
+            with open(content_cache_filename, 'rb') as content_cache_file:
+                if decode:
+                    # print(content_cache_file.read().decode())
+                    print('Content available for decoding.')
+                else:
+                    # print(content_cache_file.read())
+                    print('Content available.')
+    elif content:
+        with open(content_cache_filename, 'wb') as content_cache_file:
+            content_cache_file.write(content)
+        print('Saved to cache: ', content_cache_filename)
