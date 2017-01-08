@@ -1,14 +1,11 @@
 #!/usr/bin/python3.4
 
-import urllib
-from urllib.request import urlopen
-from pprint import pprint
 import json
 import os
-from hashlib import md5
 import time
-
-# TODO: !!! Definitely needs a refactor now.
+import urllib
+from hashlib import md5
+from urllib.request import urlopen
 
 urls = {
     'example_site': 'http://books.toscrape.com/catalogue/category/books/travel_2/index.html',
@@ -19,19 +16,22 @@ urls = {
 }
 
 d = 'cache_files'
-
 if not os.path.exists(d):
     os.makedirs(d)
 elif not os.path.isdir(d):
     raise FileExistsError('Trouble creating cache directory.')
 
-for desc, url in urls.items():
-    print('{:<12} : '.format(desc), end='')
-    content = ''
+
+def get_filename(path, name, ext):
+    name_ = md5(str(name).encode('utf-8')).hexdigest()
+    full = os.path.join(path, name_+ext)
+    return full
+
+
+def fetch_from_web(url):
+    content_cache_filename = get_filename(d, url, '.content')
+    header_cache_filename = get_filename(d, url, '.header')
     url_header = {}
-    url_md5 = md5(str(url).encode('utf-8')).hexdigest()
-    header_cache_filename = os.path.join(d, url_md5+'.header')
-    content_cache_filename = os.path.join(d, url_md5+'.content')
     try:
         response = urlopen(url)
         url_header = dict(response.info())
@@ -40,15 +40,24 @@ for desc, url in urls.items():
     except urllib.error.HTTPError as e:
         url_header['net_conn'] = True
         url_header['status'] = e.status
+        print('Failed: bad HTTP status {}.'.format(e.status))
     except urllib.error.URLError as e:
         url_header['net_conn'] = False
         url_header['reason'] = '{}'.format(e.reason)
+        print('Failed: bad network connection; {}'.format(e.reason))
     else:
         url_header['url'] = response.geturl()  # In case of redirects
-        content = response.read()
+        with open(content_cache_filename, 'wb') as content_cache_file:
+            content_cache_file.write(response.read())
+        print('Success: saved to cache:', content_cache_filename)
     with open(header_cache_filename, 'w') as header_cache_file:
         json.dump(url_header, header_cache_file)
-    if os.path.isfile(header_cache_filename) and time.time() - os.path.getmtime(header_cache_filename) < 180:
+
+
+def fetch_from_cache(url, max_age=180):
+    content_cache_filename = get_filename(d, url, '.content')
+    header_cache_filename = get_filename(d, url, '.header')
+    if os.path.isfile(header_cache_filename) and time.time() - os.path.getmtime(header_cache_filename) < max_age:
         with open(header_cache_filename, 'r') as header_file:
             header_info = json.load(header_file)
         if not header_info['net_conn']:
@@ -59,7 +68,14 @@ for desc, url in urls.items():
             with open(content_cache_filename, 'rb') as content_cache_file:
                 # print(content_cache_file.read())
                 print('Content available.')
-    elif content:
-        with open(content_cache_filename, 'wb') as content_cache_file:
-            content_cache_file.write(content)
-        print('Saved to cache: ', content_cache_filename)
+            return True
+    return False
+
+
+for desc, url in urls.items():
+    print('{:<12} : '.format(desc), end='')
+    if not fetch_from_cache(url):
+        fetch_from_web(url)
+
+
+
