@@ -1,19 +1,11 @@
 #!/usr/bin/python3.4
-
+import http
 import json
 import os
 import time
 import urllib
 from hashlib import md5
 from urllib.request import urlopen
-
-urls = {
-    'example_site': 'http://books.toscrape.com/catalogue/category/books/travel_2/index.html',
-    'example_pic': 'http://books.toscrape.com/media/cache/da/a0/daa08c54a927c27494ea5bb90af79c60.jpg',
-    'example_404': 'http://books.toscrape.com/this-url-doesnt-exist',
-    'example_403': 'http://books.toscrape.com/media/',
-    'bad_url':  'http://books.to_scrape.com'
-}
 
 d = 'cache_files'
 if not os.path.exists(d):
@@ -46,6 +38,9 @@ def fetch_from_web(url):
         url_header['net_conn'] = False
         url_header['reason'] = '{}'.format(e.reason)
         print('Failed: Bad network connection; {}.'.format(e.reason))
+    except http.client.HTTPException as e:  # TODO investigate this error; provide better output
+        url_header['net_conn'] = False
+        print('Failed: Raised http.client.BadStatusLine')
     else:
         url_header['url'] = response.geturl()  # In case of redirects
         with open(content_cache_filename, 'wb') as content_cache_file:
@@ -80,6 +75,7 @@ def fetch_from_cache(url, max_age=180):
             print('Failed: Don\'t know why')
     return False
 
+
 def fetch(url):
     c = fetch_from_cache(url)
     if not c:
@@ -88,6 +84,13 @@ def fetch(url):
 
 
 if __name__ == '__main__':
+    urls = {
+        'example_site': 'http://books.toscrape.com/catalogue/category/books/travel_2/index.html',
+        'example_pic': 'http://books.toscrape.com/media/cache/da/a0/daa08c54a927c27494ea5bb90af79c60.jpg',
+        'example_404': 'http://books.toscrape.com/this-url-doesnt-exist',
+        'example_403': 'http://books.toscrape.com/media/',
+        'bad_url': 'http://books.to_scrape.com'
+    }
     width = 100
     for desc, url in urls.items():
         print('_' * width)
