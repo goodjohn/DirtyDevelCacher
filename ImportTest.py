@@ -10,5 +10,6 @@ test_urls = [
 ]
 
 for url in test_urls:
+    GetAndSave.get_cache_path('cache_files_importer')
     GetAndSave.fetch(url)
     print()

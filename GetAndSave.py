@@ -7,11 +7,16 @@ import urllib
 from hashlib import md5
 from urllib.request import urlopen
 
-d = 'cache_files'
-if not os.path.exists(d):
-    os.makedirs(d)
-elif not os.path.isdir(d):
-    raise FileExistsError('Trouble creating cache directory.')
+path = 'cache_flies_default'
+
+
+def get_cache_path(p):
+    global path
+    path = p
+    if not os.path.exists(p):
+        os.makedirs(p)
+    elif not os.path.isdir(p):
+        raise FileExistsError('Trouble creating cache directory.')
 
 
 def get_filename(path, name, ext):
@@ -22,8 +27,8 @@ def get_filename(path, name, ext):
 
 def fetch_from_web(url):
     print('[Web]   ', end='')
-    content_cache_filename = get_filename(d, url, '.content')
-    header_cache_filename = get_filename(d, url, '.header')
+    content_cache_filename = get_filename(path, url, '.content')
+    header_cache_filename = get_filename(path, url, '.header')
     url_header = {}
     try:
         response = urlopen(url)
@@ -52,8 +57,8 @@ def fetch_from_web(url):
 
 def fetch_from_cache(url, max_age=180):
     print('[Cache] ', end='')
-    content_cache_filename = get_filename(d, url, '.content')
-    header_cache_filename = get_filename(d, url, '.header')
+    content_cache_filename = get_filename(path, url, '.content')
+    header_cache_filename = get_filename(path, url, '.header')
     if os.path.isfile(header_cache_filename) and time.time() - os.path.getmtime(header_cache_filename) < max_age:
         with open(header_cache_filename, 'r') as header_file:
             header_info = json.load(header_file)
@@ -84,6 +89,7 @@ def fetch(url):
 
 
 if __name__ == '__main__':
+    get_cache_path('cache_files')
     urls = {
         'example_site': 'http://books.toscrape.com/catalogue/category/books/travel_2/index.html',
         'example_pic': 'http://books.toscrape.com/media/cache/da/a0/daa08c54a927c27494ea5bb90af79c60.jpg',
