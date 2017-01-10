@@ -54,6 +54,7 @@ def fetch_from_web(url):
         print('Success: saved to cache:', content_cache_filename)
     with open(header_cache_filename, 'w') as header_cache_file:
         json.dump(url_header, header_cache_file)
+    return url_header['net_conn'] and url_header['status'] == 200
 
 
 def fetch_from_cache(url, max_age=180):
@@ -92,7 +93,11 @@ def fetch(url):
 def debug_pprint(urls):
     print()
     print('>>', inspect.stack()[-1][1])
-    width = 100
+    if os.popen('which stty').read():
+        rows, columns = os.popen('stty size', 'r').read().split()
+        width = int(columns)
+    else:
+        width = 100  # Approximate minimum debug output length/width
     for url in urls:
         print('_' * width)
         fetch(url)
