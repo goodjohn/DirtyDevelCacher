@@ -9,7 +9,6 @@ test_urls = [
     'http://things.toscrape.com'
 ]
 
-for url in test_urls:
+if __name__ == '__main__':
     GetAndSave.get_cache_path('cache_files_importer')
-    GetAndSave.fetch(url)
-    print()
+    GetAndSave.debug_pprint(test_urls)
