@@ -85,14 +85,14 @@ def fetch_from_cache(url, max_age=180):
     return False
 
 
-def fetch(url):
-    c = fetch_from_cache(url)
+def fetch(url, max_age=180):
+    c = fetch_from_cache(url, max_age)
     if c is None:
         c = fetch_from_web(url)
     return c
 
 
-def debug_pprint(urls):
+def debug_pprint(urls, max_age):
     print()
     print('>>', inspect.stack()[-1][1])
     if os.popen('which stty').read():
@@ -102,7 +102,7 @@ def debug_pprint(urls):
         width = 100  # Approximate minimum debug output length/width
     for url in urls:
         print('_' * width)
-        fetch(url)
+        fetch(url, max_age)
         print('\u203e' * width)
         print()
 
@@ -119,4 +119,4 @@ if __name__ == '__main__':
         'http://quotes.toscrape.com/tag/inspirational/',
         'http://quotes.toscrape.com/author/Albert-Einstein'
     ]
-    debug_pprint(urls)
+    debug_pprint(urls, 2)
