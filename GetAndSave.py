@@ -112,6 +112,9 @@ if __name__ == '__main__':
         'http://books.toscrape.com/media/cache/da/a0/daa08c54a927c27494ea5bb90af79c60.jpg',
         'http://books.toscrape.com/this-url-doesnt-exist',
         'http://books.toscrape.com/media/',
-        'http://books.to_scrape.com'
+        'http://books.to_scrape.com',
+        'http://quotes.toscrape.com/',
+        'http://quotes.toscrape.com/tag/inspirational/',
+        'http://quotes.toscrape.com/author/Albert-Einstein'
     ]
     debug_pprint(urls)
