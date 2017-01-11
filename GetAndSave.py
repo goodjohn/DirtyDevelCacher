@@ -76,8 +76,10 @@ def fetch_from_cache(url, max_age=180):
     else:
         if not os.path.isfile(header_cache_filename):
             print('Failed : File not found.')
+            return None
         elif time.time() - os.path.getmtime(header_cache_filename) > max_age:
             print('Failed : Resource exceeds maximum age.')
+            return None
         else:
             print('Failed : Don\'t know why')
     return False
@@ -85,7 +87,7 @@ def fetch_from_cache(url, max_age=180):
 
 def fetch(url):
     c = fetch_from_cache(url)
-    if not c:
+    if c is None:
         c = fetch_from_web(url)
     return c
 
