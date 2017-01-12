@@ -44,9 +44,9 @@ def fetch_from_web(url):
         url_header['net_conn'] = False
         url_header['reason'] = '{}'.format(e.reason)
         print('Failed : Bad network connection; {}.'.format(e.reason))
-    except http.client.HTTPException as e:  # TODO investigate this error; provide better output
+    except http.client.BadStatusLine as e:
         url_header['net_conn'] = False
-        print('Failed : Raised http.client.BadStatusLine')
+        print('Failed : Received unknown HTTP status code. (http.client.BadStatusLine, {})'.format(e))
     else:
         url_header['url'] = response.geturl()  # In case of redirects
         with open(content_cache_filename, 'wb') as content_cache_file:
@@ -116,6 +116,7 @@ if __name__ == '__main__':
         'http://books.toscrape.com/this-url-doesnt-exist',
         'http://books.toscrape.com/media/',
         'http://books.to_scrape.com',
+        'http://stuff.toscrape.com',
         'http://quotes.toscrape.com/',
         'http://quotes.toscrape.com/tag/inspirational/',
         'http://quotes.toscrape.com/author/Albert-Einstein'
