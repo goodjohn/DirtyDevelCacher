@@ -71,7 +71,8 @@ def fetch_from_cache(url, max_age=180):
         elif os.path.isfile(content_cache_filename):
             with open(content_cache_filename, 'rb') as content_cache_file:
                 # print(content_cache_file.read())
-                print('Success: Content available.')
+                size = os.path.getsize(content_cache_filename)
+                print('Success: Content available ({} KB).'.format(round(size / 1024)))
             return True
     else:
         if not os.path.isfile(header_cache_filename):
