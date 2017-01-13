@@ -13,5 +13,4 @@ test_urls = [
 ]
 
 if __name__ == '__main__':
-    GetAndSave.get_cache_path('cache_files_importer')
     GetAndSave.debug_pprint(test_urls, 3600)
