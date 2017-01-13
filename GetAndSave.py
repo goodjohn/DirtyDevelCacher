@@ -12,6 +12,7 @@ from urllib.request import urlopen
 class GetAndSave:
 
     def __init__(self, url, cache_path='cache_files_default', max_age=180):
+        self.url = url
         self.try_cache_path(cache_path)
         self.cache_path = cache_path
         self.content_cache_filename = os.path.join(self.cache_path, md5(str(url).encode('utf-8')).hexdigest()+'.content')
@@ -24,11 +25,11 @@ class GetAndSave:
         elif not os.path.isdir(p):
             raise FileExistsError('Trouble creating cache directory.')
 
-    def fetch_from_web(self, url):
+    def fetch_from_web(self):
         print('[Web]   ', end='')
         url_header = {}
         try:
-            response = urlopen(url)
+            response = urlopen(self.url)
             url_header = dict(response.info())
             url_header['net_conn'] = True
             url_header['status'] = response.status
@@ -78,10 +79,10 @@ class GetAndSave:
                 print('Failed : Don\'t know why')
         return False
 
-    def fetch(self, url):
+    def fetch(self):
         c = self.fetch_from_cache()
         if c is None:
-            c = self.fetch_from_web(url)
+            c = self.fetch_from_web()
         return c
 
 
@@ -96,7 +97,7 @@ def debug_pprint(urls, max_age):
     for url in urls:
         f = GetAndSave(url, max_age=max_age)
         print('_' * width)
-        f.fetch(url)
+        f.fetch()
         print('\u203e' * width)
 
 
