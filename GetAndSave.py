@@ -11,12 +11,13 @@ from urllib.request import urlopen
 
 class GetAndSave:
 
-    def __init__(self, url, cache_path='cache_files_default', max_age=180):
+    def __init__(self, url, cache_path='cache_files_default', max_age=180, verbose=True):
         self.url = url
         self.cache_path = cache_path
         self.content_file = url
         self.header_file = url
         self.max_age = max_age
+        self.verbose_toggle = verbose
 
     @property
     def cache_path(self):
@@ -51,7 +52,7 @@ class GetAndSave:
         self.__content_file = full
 
     def fetch_from_web(self):
-        print('[Web]   ', end='')
+        self.verbose('[Web]   ', end='')
         url_header = {}
         try:
             response = urlopen(self.url)
@@ -61,44 +62,44 @@ class GetAndSave:
         except urllib.error.HTTPError as e:
             url_header['net_conn'] = True
             url_header['status'] = e.status
-            print('Failed : Bad HTTP status {}.'.format(e.status))
+            self.verbose('Failed : Bad HTTP status {}.'.format(e.status))
         except urllib.error.URLError as e:
             url_header['net_conn'] = False
             url_header['reason'] = '{}'.format(e.reason)
-            print('Failed : Bad network connection; {}.'.format(e.reason))
+            self.verbose('Failed : Bad network connection; {}.'.format(e.reason))
         except http.client.BadStatusLine as e:
             url_header['net_conn'] = False
-            print('Failed : Unknown HTTP status code; URL is probably invalid. (http.client.BadStatusLine, {})'.format(e))
+            self.verbose('Failed : Unknown HTTP status code; URL is probably invalid. (http.client.BadStatusLine, {})'.format(e))
         else:
             url_header['url'] = response.geturl()  # In case of redirects
             with open(self.content_file, 'wb') as content_cache_file:
                 content_cache_file.write(response.read())
-            print('Success: saved to cache:', self.content_file)
+            self.verbose('Success: saved to cache:', self.content_file)
         with open(self.header_file, 'w') as header_cache_file:
             json.dump(url_header, header_cache_file)
         return url_header['net_conn'] and url_header['status'] == 200
 
     def fetch_from_cache(self):
-        print('[Cache] ', end='')
+        self.verbose('[Cache] ', end='')
         age = time.time() - os.path.getmtime(self.header_file)
         if os.path.isfile(self.header_file) and age < self.max_age:
             with open(self.header_file, 'r') as header_file:
                 header_info = json.load(header_file)
             if not header_info['net_conn']:
-                print('Failed : Bad network connection; resource not in cache')
+                self.verbose('Failed : Bad network connection; resource not in cache')
             elif header_info['status'] == 404 or header_info['status'] == 403:
-                print('Failed : HTTP Status {}; resource not in cache.'.format(header_info['status']))
+                self.verbose('Failed : HTTP Status {}; resource not in cache.'.format(header_info['status']))
             elif os.path.isfile(self.content_file):
                 with open(self.content_file, 'rb') as content_cache_file:
-                    # print(content_cache_file.read())
+                    # self.verbose(content_cache_file.read())
                     size = os.path.getsize(self.content_file)
-                    print('Success: Content available ({} KB).'.format(round(size / 1024)))
+                    self.verbose('Success: Content available ({} KB).'.format(round(size / 1024)))
                 return True
         else:
             if not os.path.isfile(self.header_file):
-                print('Failed : File not found.')
+                self.verbose('Failed : File not found.')
             elif age >= self.max_age:
-                print('Failed : Resource exceeds maximum age.')
+                self.verbose('Failed : Resource exceeds maximum age.')
             return None
         return False
 
@@ -107,8 +108,12 @@ class GetAndSave:
         if c is None:
             c = self.fetch_from_web()
         elif c is False:
-            print(' '*17 + 'Bad URL. Check and try again: {}'.format(self.url))
+            self.verbose(' '*17 + 'Bad URL. Check and try again: {}'.format(self.url))
         return c
+
+    def verbose(self, message, *args, **kwargs):
+        if self.verbose_toggle:
+            print(message, *args, **kwargs)
 
 
 def debug_pprint(urls, max_age):
