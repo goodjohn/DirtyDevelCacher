@@ -13,17 +13,42 @@ class GetAndSave:
 
     def __init__(self, url, cache_path='cache_files_default', max_age=180):
         self.url = url
-        self.try_cache_path(cache_path)
         self.cache_path = cache_path
-        self.content_cache_filename = os.path.join(self.cache_path, md5(str(url).encode('utf-8')).hexdigest()+'.content')
-        self.header_cache_filename = os.path.join(self.cache_path, md5(str(url).encode('utf-8')).hexdigest()+'.header')
+        self.content_file = url
+        self.header_file = url
         self.max_age = max_age
 
-    def try_cache_path(self, p):
-        if not os.path.exists(p):
-            os.makedirs(p)
-        elif not os.path.isdir(p):
+    @property
+    def cache_path(self):
+        return self.__cache_path
+
+    @cache_path.setter
+    def cache_path(self, path):
+        if not os.path.exists(path):
+            os.makedirs(path)
+        elif not os.path.isdir(path):
             raise FileExistsError('Trouble creating cache directory.')
+        self.__cache_path = path
+
+    @property
+    def header_file(self):
+        return self.__header_file
+
+    @header_file.setter
+    def header_file(self, url):
+        hashed_name = md5(str(url).encode('utf-8')).hexdigest() + '.header'
+        full = os.path.join(self.cache_path, hashed_name)
+        self.__header_file = full
+
+    @property
+    def content_file(self):
+        return self.__content_file
+
+    @content_file.setter
+    def content_file(self, url):
+        hashed_name = md5(str(url).encode('utf-8')).hexdigest() + '.content'
+        full = os.path.join(self.cache_path, hashed_name)
+        self.__content_file = full
 
     def fetch_from_web(self):
         print('[Web]   ', end='')
@@ -46,43 +71,43 @@ class GetAndSave:
             print('Failed : Unknown HTTP status code; URL is probably invalid. (http.client.BadStatusLine, {})'.format(e))
         else:
             url_header['url'] = response.geturl()  # In case of redirects
-            with open(self.content_cache_filename, 'wb') as content_cache_file:
+            with open(self.content_file, 'wb') as content_cache_file:
                 content_cache_file.write(response.read())
-            print('Success: saved to cache:', self.content_cache_filename)
-        with open(self.header_cache_filename, 'w') as header_cache_file:
+            print('Success: saved to cache:', self.content_file)
+        with open(self.header_file, 'w') as header_cache_file:
             json.dump(url_header, header_cache_file)
         return url_header['net_conn'] and url_header['status'] == 200
 
     def fetch_from_cache(self):
         print('[Cache] ', end='')
-        if os.path.isfile(self.header_cache_filename) and time.time() - os.path.getmtime(self.header_cache_filename) < self.max_age:
-            with open(self.header_cache_filename, 'r') as header_file:
+        age = time.time() - os.path.getmtime(self.header_file)
+        if os.path.isfile(self.header_file) and age < self.max_age:
+            with open(self.header_file, 'r') as header_file:
                 header_info = json.load(header_file)
             if not header_info['net_conn']:
                 print('Failed : Bad network connection; resource not in cache')
             elif header_info['status'] == 404 or header_info['status'] == 403:
                 print('Failed : HTTP Status {}; resource not in cache.'.format(header_info['status']))
-            elif os.path.isfile(self.content_cache_filename):
-                with open(self.content_cache_filename, 'rb') as content_cache_file:
+            elif os.path.isfile(self.content_file):
+                with open(self.content_file, 'rb') as content_cache_file:
                     # print(content_cache_file.read())
-                    size = os.path.getsize(self.content_cache_filename)
+                    size = os.path.getsize(self.content_file)
                     print('Success: Content available ({} KB).'.format(round(size / 1024)))
                 return True
         else:
-            if not os.path.isfile(self.header_cache_filename):
+            if not os.path.isfile(self.header_file):
                 print('Failed : File not found.')
-                return None
-            elif time.time() - os.path.getmtime(self.header_cache_filename) > self.max_age:
+            elif age >= self.max_age:
                 print('Failed : Resource exceeds maximum age.')
-                return None
-            else:
-                print('Failed : Don\'t know why')
+            return None
         return False
 
     def fetch(self):
         c = self.fetch_from_cache()
         if c is None:
             c = self.fetch_from_web()
+        elif c is False:
+            print(' '*17 + 'Bad URL. Check and try again: {}'.format(self.url))
         return c
 
 
