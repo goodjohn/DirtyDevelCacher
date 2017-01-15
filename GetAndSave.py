@@ -54,6 +54,7 @@ class GetAndSave:
     def fetch_from_web(self):
         self.verbose('[Web]   ', end='')
         url_header = {}
+        response_ = None
         try:
             response = urlopen(self.url)
             url_header = dict(response.info())
@@ -72,16 +73,20 @@ class GetAndSave:
             self.verbose('Failed : Unknown HTTP status code; URL is probably invalid. (http.client.BadStatusLine, {})'.format(e))
         else:
             url_header['url'] = response.geturl()  # In case of redirects
+            response_ = response.read()  # BODGE, response.read() blanks (turns to '') after being called.
             with open(self.content_file, 'wb') as content_cache_file:
-                content_cache_file.write(response.read())
+                content_cache_file.write(response_)
             self.verbose('Success: saved to cache:', self.content_file)
         with open(self.header_file, 'w') as header_cache_file:
             json.dump(url_header, header_cache_file)
-        return url_header['net_conn'] and url_header['status'] == 200
+        if response_ and not self.verbose_toggle:
+            return response_
+        else:
+            return url_header['net_conn'] and url_header['status'] == 200
 
     def fetch_from_cache(self):
         self.verbose('[Cache] ', end='')
-        age = time.time() - os.path.getmtime(self.header_file)
+        age = time.time() - os.path.getmtime(self.header_file) if os.path.isfile(self.header_file) else -1  # BODGE
         if os.path.isfile(self.header_file) and age < self.max_age:
             with open(self.header_file, 'r') as header_file:
                 header_info = json.load(header_file)
@@ -91,9 +96,10 @@ class GetAndSave:
                 self.verbose('Failed : HTTP Status {}; resource not in cache.'.format(header_info['status']))
             elif os.path.isfile(self.content_file):
                 with open(self.content_file, 'rb') as content_cache_file:
-                    # self.verbose(content_cache_file.read())
                     size = os.path.getsize(self.content_file)
                     self.verbose('Success: Content available ({} KB).'.format(round(size / 1024)))
+                    if not self.verbose_toggle:
+                        return content_cache_file.read()
                 return True
         else:
             if not os.path.isfile(self.header_file):
@@ -118,7 +124,7 @@ class GetAndSave:
 
 def fetch(url, **kwargs):
     gas = GetAndSave(url, **kwargs)
-    gas.fetch()
+    return gas.fetch()
 
 
 def debug_pprint(urls, max_age, verbose=True):
