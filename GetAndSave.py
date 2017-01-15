@@ -11,7 +11,7 @@ from urllib.request import urlopen
 
 class GetAndSave:
 
-    def __init__(self, url, cache_path='cache_files_default', max_age=180, verbose=True):
+    def __init__(self, url, cache_path='cache_files_default', max_age=180, verbose=False):
         self.url = url
         self.cache_path = cache_path
         self.content_file = url
@@ -116,7 +116,12 @@ class GetAndSave:
             print(message, *args, **kwargs)
 
 
-def debug_pprint(urls, max_age):
+def fetch(url, **kwargs):
+    gas = GetAndSave(url, **kwargs)
+    gas.fetch()
+
+
+def debug_pprint(urls, max_age, verbose=True):
     print()
     print('>>', inspect.stack()[-1][1])
     if os.popen('which stty').read():
@@ -125,9 +130,8 @@ def debug_pprint(urls, max_age):
     else:
         width = 100  # Approximate minimum debug output length/width
     for url in urls:
-        f = GetAndSave(url, max_age=max_age)
         print('_' * width)
-        f.fetch()
+        fetch(url, max_age=max_age, verbose=verbose)
         print('\u203e' * width)
 
 
