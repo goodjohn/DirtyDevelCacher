@@ -86,26 +86,28 @@ class GetAndSave:
 
     def fetch_from_cache(self):
         self.verbose('[Cache] ', end='')
-        age = time.time() - os.path.getmtime(self.header_file) if os.path.isfile(self.header_file) else -1  # BODGE
-        if os.path.isfile(self.header_file) and age < self.max_age:
-            with open(self.header_file, 'r') as header_file:
-                header_info = json.load(header_file)
-            if not header_info['net_conn']:
-                self.verbose('Failed : Bad network connection; resource not in cache')
-            elif header_info['status'] == 404 or header_info['status'] == 403:
-                self.verbose('Failed : HTTP Status {}; resource not in cache.'.format(header_info['status']))
-            elif os.path.isfile(self.content_file):
-                with open(self.content_file, 'rb') as content_cache_file:
-                    size = os.path.getsize(self.content_file)
-                    self.verbose('Success: Content available ({} KB).'.format(round(size / 1024)))
-                    if not self.verbose_toggle:
-                        return content_cache_file.read()
-                return True
-        else:
-            if not os.path.isfile(self.header_file):
-                self.verbose('Failed : File not found.')
-            elif age >= self.max_age:
+        if os.path.isfile(self.header_file):
+            age = time.time() - os.path.getmtime(self.header_file)
+            if age < self.max_age:
+                with open(self.header_file, 'r') as header_file:
+                    header_info = json.load(header_file)
+                if not header_info['net_conn']:
+                    self.verbose('Failed : Bad network connection; resource not in cache')
+                elif header_info['status'] == 404 or header_info['status'] == 403:
+                    self.verbose('Failed : HTTP Status {}; resource not in cache.'.format(header_info['status']))
+                elif os.path.isfile(self.content_file):
+                    with open(self.content_file, 'rb') as content_cache_file:
+                        if not self.verbose_toggle:
+                            return content_cache_file.read()
+                        else:
+                            size = os.path.getsize(self.content_file)
+                            self.verbose('Success: Content available ({} KB).'.format(round(size / 1024)))
+                            return True
+            else:
                 self.verbose('Failed : Resource exceeds maximum age.')
+                return None
+        else:
+            self.verbose('Failed : File not found.')
             return None
         return False
 
@@ -117,13 +119,13 @@ class GetAndSave:
             self.verbose(' '*17 + 'Bad URL. Check and try again: {}'.format(self.url))
         return c
 
-    def verbose(self, message, *args, **kwargs):
+    def verbose(self, *args, **kwargs):
         if self.verbose_toggle:
-            print(message, *args, **kwargs)
+            print(*args, **kwargs)
 
 
-def fetch(url, **kwargs):
-    gas = GetAndSave(url, **kwargs)
+def fetch(*args, **kwargs):
+    gas = GetAndSave(*args, **kwargs)
     return gas.fetch()
 
 
